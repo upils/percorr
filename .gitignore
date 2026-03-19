@@ -3,3 +3,4 @@ sample.bin
 sample2.bin
 gen-sample
 *.prof
+trace.out

@@ -26,7 +26,10 @@ gen-sample:
 	dd if=/dev/urandom of=$(BENCH_FILE) bs=1M count=60000 status=progress
 
 run: build drop-cache
-	./$(BINARY) -file $(BENCH_FILE) -value $(BENCH_VALUE) -block-size $(BLOCK_SIZE)
+	./$(BINARY) -file $(BENCH_FILE) -value $(BENCH_VALUE) -block-size $(BLOCK_SIZE) -method async
+
+run-profile: build drop-cache
+	GODEBUG=gctrace=1 ./$(BINARY) -file $(BENCH_FILE) -value $(BENCH_VALUE) -block-size $(BLOCK_SIZE) -method async -cpuprofile cpu.prof -memprofile mem.prof -traceprofile trace.out
 
 bench-sequential: build
 	hyperfine \

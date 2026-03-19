@@ -10,6 +10,7 @@ import (
 	"os"
 	"runtime"
 	"runtime/pprof"
+	"runtime/trace"
 	"sync"
 	"sync/atomic"
 	"syscall"
@@ -120,7 +121,6 @@ func findMmap(f *os.File, target uint64, blockSize int) bool {
 	}
 	return false
 }
-
 
 // findAsync keeps queueDepth read requests perpetually in flight by using a
 // counting semaphore that is acquired before issuing a ReadAt and released by
@@ -251,6 +251,7 @@ var methods = map[string]searchFunc{
 
 func main() {
 	cpuprofile := flag.String("cpuprofile", "", "write cpu profile to `file`")
+	traceprofile := flag.String("traceprofile", "", "write trace profile to `file`")
 	memprofile := flag.String("memprofile", "", "write memory profile to `file`")
 
 	file := flag.String("file", "", "path to the binary file to search (required)")
@@ -285,6 +286,16 @@ func main() {
 		defer pprof.StopCPUProfile()
 	}
 
+	if *traceprofile != "" {
+		f, err := os.Create(*traceprofile)
+		if err != nil {
+			log.Fatal("could not create trace file: ", err)
+		}
+		defer f.Close()
+		trace.Start(f)
+		defer trace.Stop()
+	}
+
 	f, err := os.Open(*file)
 	if err != nil {
 		fmt.Print(err)
@@ -301,7 +312,7 @@ func main() {
 			log.Fatal("could not create memory profile: ", err)
 		}
 		defer f.Close()
-		runtime.GC()    // get up-to-date statistics
+		runtime.GC() // get up-to-date statistics
 		if err := pprof.Lookup("allocs").WriteTo(f, 0); err != nil {
 			log.Fatal("could not write memory profile: ", err)
 		}
